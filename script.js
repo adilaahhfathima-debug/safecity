@@ -1,11 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Report Button
     const reportBtn = document.getElementById("reportBtn");
 
     reportBtn.addEventListener("click", () => {
         window.location.href = "report.html";
     });
+
+});
 
     // Feature Card Animation
     const cards = document.querySelectorAll(".card");
