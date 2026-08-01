@@ -1,0 +1,382 @@
+import React, { useState, useEffect } from 'react';
+import { Shield, MapPin, AlertTriangle, FileText, CheckCircle, Clock, Search, LogOut, ChevronDown, Activity, Users, Settings, Filter, SearchX, Lock } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Legend
+} from 'recharts';
+
+const initialReports = [
+  { id: 'TXN-0x8f2a...39c1', type: 'Theft', location: { x: 45, y: 30 }, address: 'Sector 4, Downtown', description: 'Two individuals snatched a purse near the station.', priority: 'high', status: 'verified', timestamp: '2026-08-01T01:15:00Z', aiConfidence: 94, blockchainConfirmed: true },
+  { id: 'TXN-0x1b4c...98e2', type: 'Vandalism', location: { x: 70, y: 60 }, address: 'Public Library, East Side', description: 'Graffiti sprayed on the main entrance.', priority: 'low', status: 'investigating', timestamp: '2026-07-31T22:30:00Z', aiConfidence: 88, blockchainConfirmed: true },
+  { id: 'TXN-0x7c9d...44f5', type: 'Assault', location: { x: 30, y: 55 }, address: 'West Market', description: 'Physical altercation reported between two groups.', priority: 'high', status: 'resolved', timestamp: '2026-07-31T18:45:00Z', aiConfidence: 98, blockchainConfirmed: true },
+  { id: 'TXN-0x3a2f...11b8', type: 'Suspicious Activity', location: { x: 80, y: 20 }, address: 'North Ridge School District', description: 'Unidentified vehicle parked near the school for hours.', priority: 'medium', status: 'verified', timestamp: '2026-08-01T02:00:00Z', aiConfidence: 75, blockchainConfirmed: true },
+  { id: 'TXN-0x9e1d...55c2', type: 'Traffic Hazard', location: { x: 50, y: 75 }, address: 'Main Highway, South Exit', description: 'Large pothole causing minor accidents.', priority: 'medium', status: 'pending', timestamp: '2026-08-01T02:30:00Z', aiConfidence: 91, blockchainConfirmed: false },
+];
+
+const crimeTrendsData = [
+  { name: 'Mon', Theft: 400, Assault: 240, Vandalism: 240 },
+  { name: 'Tue', Theft: 300, Assault: 139, Vandalism: 221 },
+  { name: 'Wed', Theft: 200, Assault: 980, Vandalism: 229 },
+  { name: 'Thu', Theft: 278, Assault: 390, Vandalism: 200 },
+  { name: 'Fri', Theft: 189, Assault: 480, Vandalism: 218 },
+  { name: 'Sat', Theft: 239, Assault: 380, Vandalism: 250 },
+  { name: 'Sun', Theft: 349, Assault: 430, Vandalism: 210 },
+];
+
+const priorityStats = [
+  { name: 'High', count: 12 },
+  { name: 'Medium', count: 34 },
+  { name: 'Low', count: 56 },
+];
+
+export default function SafeCityAI() {
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, report, map, admin
+  const [reports, setReports] = useState(initialReports);
+  const [userRole, setUserRole] = useState('citizen'); // citizen, authority
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Form State
+  const [reportType, setReportType] = useState('Theft');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportAddress, setReportAddress] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const handleReportSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    // Simulate AI Analysis and Blockchain transaction
+    setTimeout(() => {
+      // Mock AI Evaluation
+      const aiPriority = reportType === 'Assault' || reportType === 'Robbery' ? 'high' : reportType === 'Vandalism' ? 'low' : 'medium';
+      const aiConfidenceScore = Math.floor(Math.random() * (99 - 70 + 1) + 70); // 70-99%
+      
+      // Mock Fake Report Detection
+      if(reportDescription.length < 10) {
+          alert("AI Flag: Description too short. Please provide more details.");
+          setIsSubmitting(false);
+          return;
+      }
+
+      // Mock Blockchain ID generation
+      const mockTxnId = `TXN-0x${Math.random().toString(16).substr(2, 8)}...${Math.random().toString(16).substr(2, 4)}`;
+
+      const newReport = {
+        id: mockTxnId,
+        type: reportType,
+        location: { x: Math.floor(Math.random() * 80) + 10, y: Math.floor(Math.random() * 80) + 10 },
+        address: reportAddress || 'Anonymous Location',
+        description: reportDescription,
+        priority: aiPriority,
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+        aiConfidence: aiConfidenceScore,
+        blockchainConfirmed: true
+      };
+
+      setReports([newReport, ...reports]);
+      setIsSubmitting(false);
+      setSubmitSuccess(true);
+      
+      // Reset form
+      setReportDescription('');
+      setReportAddress('');
+      
+      setTimeout(() => setSubmitSuccess(false), 5000);
+    }, 2000);
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return 'text-red-600 bg-red-100 border-red-200';
+      case 'medium': return 'text-orange-600 bg-orange-100 border-orange-200';
+      case 'low': return 'text-blue-600 bg-blue-100 border-blue-200';
+      default: return 'text-gray-600 bg-gray-100 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'verified': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'pending': return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'investigating': return <Search className="w-4 h-4 text-blue-500" />;
+      case 'resolved': return <CheckCircle className="w-4 h-4 text-gray-500" />;
+      default: return null;
+    }
+  };
+
+  const Sidebar = () => (
+    <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transition-transform transform ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:flex-shrink-0 flex flex-col`}>
+      <div className="flex items-center justify-center h-20 border-b border-slate-800">
+        <Shield className="w-8 h-8 text-blue-500 mr-2" />
+        <span className="text-xl font-bold tracking-wider">SafeCity<span className="text-blue-500">AI</span></span>
+      </div>
+      
+      <div className="p-4 border-b border-slate-800">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+            {userRole === 'authority' ? <Shield className="w-5 h-5 text-yellow-400" /> : <Users className="w-5 h-5 text-gray-400" />}
+          </div>
+          <div>
+            <p className="text-sm font-medium">{userRole === 'authority' ? 'Officer Portal' : 'Citizen Mode'}</p>
+            <p className="text-xs text-slate-400">Anonymous Active</p>
+          </div>
+        </div>
+        <button 
+          onClick={() => setUserRole(userRole === 'citizen' ? 'authority' : 'citizen')}
+          className="w-full mt-2 text-xs bg-slate-800 hover:bg-slate-700 py-1.5 rounded text-slate-300 transition-colors"
+        >
+          Switch to {userRole === 'citizen' ? 'Authority' : 'Citizen'} View
+        </button>
+      </div>
+
+      <nav className="flex-1 px-2 py-4 space-y-2">
+        <NavItem icon={<Activity />} label="Dashboard" id="dashboard" />
+        {userRole === 'citizen' && <NavItem icon={<AlertTriangle />} label="Report Incident" id="report" />}
+        <NavItem icon={<MapPin />} label="Live Map" id="map" />
+        {userRole === 'authority' && <NavItem icon={<FileText />} label="All Reports" id="admin" />}
+      </nav>
+
+      <div className="p-4 border-t border-slate-800">
+         <div className="flex items-center text-slate-400 text-sm hover:text-white cursor-pointer transition-colors">
+            <Settings className="w-4 h-4 mr-2" />
+            <span>Settings</span>
+         </div>
+      </div>
+    </div>
+  );
+
+  const NavItem = ({ icon, label, id }) => (
+    <button
+      onClick={() => { setActiveTab(id); setIsMenuOpen(false); }}
+      className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${
+        activeTab === id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+      }`}
+    >
+      {React.cloneElement(icon, { className: 'w-5 h-5 mr-3' })}
+      {label}
+    </button>
+  );
+
+  const ReportForm = () => (
+    <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="p-6 border-b border-slate-200 bg-slate-50">
+        <h2 className="text-2xl font-bold text-slate-800 flex items-center">
+          <AlertTriangle className="w-6 h-6 text-red-500 mr-2" />
+          Report an Incident Anonymously
+        </h2>
+        <p className="text-slate-500 mt-2 text-sm">Your identity is protected. Reports are verified by AI and secured on the blockchain.</p>
+      </div>
+
+      {submitSuccess ? (
+        <div className="p-8 text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">Report Submitted Securely</h3>
+          <p className="text-slate-600 mb-6">Your report has been analyzed by AI, assigned a blockchain ID, and sent to local authorities.</p>
+          <button 
+            onClick={() => setSubmitSuccess(false)}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Submit Another Report
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleReportSubmit} className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Incident Type</label>
+            <div className="relative">
+              <select 
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+                className="w-full appearance-none bg-white border border-slate-300 text-slate-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option>Theft</option>
+                <option>Assault</option>
+                <option>Vandalism</option>
+                <option>Suspicious Activity</option>
+                <option>Traffic Hazard</option>
+                <option>Other</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Location (Optional, for precise mapping)</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MapPin className="h-5 w-5 text-slate-400" />
+              </div>
+              <input 
+                type="text" 
+                placeholder="e.g., Near City Center Mall, Main St."
+                value={reportAddress}
+                onChange={(e) => setReportAddress(e.target.value)}
+                className="w-full pl-10 bg-white border border-slate-300 text-slate-700 py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+            <textarea 
+              rows="4"
+              required
+              placeholder="Describe what happened in detail. AI will analyze this for priority and validity."
+              value={reportDescription}
+              onChange={(e) => setReportDescription(e.target.value)}
+              className="w-full bg-white border border-slate-300 text-slate-700 py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            ></textarea>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex items-start space-x-3">
+             <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+             <p className="text-xs text-blue-800">
+               <strong>Blockchain Security Active:</strong> Upon submission, a cryptographic hash of this report will be generated. It cannot be altered or deleted, ensuring transparency.
+             </p>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={isSubmitting}
+            className={`w-full py-3 px-4 rounded-lg text-white font-medium flex items-center justify-center transition-colors ${
+              isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                AI Analyzing & Securing...
+              </span>
+            ) : 'Submit Anonymous Report'}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+
+  const Dashboard = () => (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">City Overview</h2>
+          <p className="text-slate-500">Real-time AI-analyzed safety metrics</p>
+        </div>
+        <div className="mt-4 md:mt-0 flex space-x-2">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <span className="w-2 h-2 mr-1.5 bg-green-500 rounded-full animate-pulse"></span>
+            System Operational
+          </span>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            Blockchain Synced
+          </span>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Reports (24h)', value: reports.length, icon: <FileText className="text-blue-500" />, trend: '+12%' },
+          { label: 'High Priority', value: reports.filter(r => r.priority === 'high').length, icon: <AlertTriangle className="text-red-500" />, trend: '-2%' },
+          { label: 'Fake Reports Filtered', value: '18', icon: <SearchX className="text-orange-500" />, trend: 'AI Active' },
+          { label: 'Avg Response Time', value: '14m', icon: <Clock className="text-green-500" />, trend: '-3m' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+              <div className="flex items-baseline mt-1">
+                <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
+                <span className={`ml-2 text-xs font-medium ${stat.trend.startsWith('+') ? 'text-red-500' : stat.trend.startsWith('-') ? 'text-green-500' : 'text-blue-500'}`}>
+                  {stat.trend}
+                </span>
+              </div>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-lg">
+              {stat.icon}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Crime Trends (Last 7 Days)</h3>
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={crimeTrendsData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                <Line type="monotone" dataKey="Theft" stroke="#3b82f6" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+                <Line type="monotone" dataKey="Assault" stroke="#ef4444" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+                <Line type="monotone" dataKey="Vandalism" stroke="#f59e0b" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Incident Priority</h3>
+          <div className="flex-1">
+             <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={priorityStats} margin={{ top: 5, right: 0, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                <RechartsTooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {
+                    priorityStats.map((entry, index) => (
+                      <cell key={`cell-${index}`} fill={entry.name === 'High' ? '#ef4444' : entry.name === 'Medium' ? '#f59e0b' : '#3b82f6'} />
+                    ))
+                  }
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs text-slate-500 text-center">AI prioritization active based on semantic analysis of reports.</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Recent Blockchain Transactions Teaser */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+            <h3 className="font-bold text-slate-800 flex items-center">
+               <Shield className="w-4 h-4 text-blue-500 mr-2" />
+               Recent Immutable Records
+            </h3>
+            <button onClick={() => setActiveTab('admin')} className="text-sm text-blue-600 hover:text-blue-800 font-medium">View All</button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <tbody className="bg-white divide-y divide-slate-200">
+              {reports.slice(0, 3).map((report) => (
+                <tr key={report.id} className="hover:bg-slate-50">
+                  <td className="px-6 py-3 whitespace-nowrap text-xs font-mono text-slate-500">{report.id}</td>
+                  <td className="px-6 py-3 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full border ${getPriorityColor(report.priority)}`}>
+                      {report.priority.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3 whitespace-nowrap text-s
+                  
